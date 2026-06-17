@@ -353,6 +353,33 @@ tr:hover td{background:var(--blue-lt);}
               <option value="">Tous types</option>
               <option>Maison</option><option>Appartement</option><option>Terrain</option><option>Autre</option>
             </select>
+            <select class="filter-sel" id="s-motiv" onchange="filterProspects()">
+              <option value="">Toute motivation</option>
+              <option>Faible</option><option>Moyen</option><option>Élevé</option>
+            </select>
+            <select class="filter-sel" id="s-relance" onchange="filterProspects()">
+              <option value="">Relance : tous</option>
+              <option value="Oui">Relance : oui</option>
+              <option value="Non">Relance : non</option>
+            </select>
+          </div>
+          <div class="search-bar" style="border-top:1px solid var(--g200);">
+            <span style="font-size:12px;color:var(--g500);font-weight:500;flex-shrink:0;">Trier par :</span>
+            <select class="filter-sel" id="s-sort-field" onchange="filterProspects()">
+              <option value="date">Date récupération</option>
+              <option value="ville">Ville</option>
+              <option value="nom">Nom propriétaire</option>
+              <option value="prix">Prix</option>
+              <option value="statut">Statut</option>
+              <option value="motiv">Motivation</option>
+              <option value="date_relance">Date de relance</option>
+            </select>
+            <button class="btn btn-sm" id="s-sort-dir" onclick="toggleSortDir()" title="Inverser l'ordre">
+              <i class="ti ti-sort-descending" id="sort-dir-icon"></i><span id="sort-dir-label">Décroissant</span>
+            </button>
+            <button class="btn btn-sm" onclick="resetFilters()" style="margin-left:auto;">
+              <i class="ti ti-x"></i> Réinitialiser
+            </button>
           </div>
           <div class="table-wrap" id="prospects-wrap"><div class="empty-state"><i class="ti ti-building-store"></i><p>Aucun prospect</p></div></div>
         </div>
@@ -480,6 +507,24 @@ tr:hover td{background:var(--blue-lt);}
         </div>
       </div>
 
+
+      <!-- EDIT SCRIPT -->
+      <div class="page" id="page-editscript">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="ti ti-edit"></i> Phases du script</span>
+            <button class="btn btn-primary btn-sm" onclick="saveScript()"><i class="ti ti-device-floppy"></i> Sauvegarder</button>
+          </div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;" id="script-phases-editor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="ti ti-alert-triangle"></i> Objections</span>
+            <button class="btn btn-sm" onclick="addObjection()"><i class="ti ti-plus"></i> Ajouter</button>
+          </div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px;" id="objections-editor"></div>
+        </div>
+      </div>
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -566,7 +611,7 @@ function showPage(id, el) {
   document.getElementById('page-title').textContent = PT[id] || '';
   closeSidebar();
   if (id==='dashboard') renderDashboard();
-  if (id==='prospects') renderProspects();
+  if (id==='prospects') filterProspects();
   if (id==='relances')  renderRelances();
 }
 
@@ -626,8 +671,21 @@ function renderDashboard() {
 
 function renderProspects(list) {
   const data = list || prospects;
+  const sortField = document.getElementById('s-sort-field') ? document.getElementById('s-sort-field').value : 'date';
+  const sortDir = window.currentSortDir || 'desc';
+  const arrow = (field) => sortField===field ? (sortDir==='asc'?' <i class="ti ti-arrow-up" style="font-size:11px"></i>':' <i class="ti ti-arrow-down" style="font-size:11px"></i>') : '';
   document.getElementById('prospects-wrap').innerHTML = data.length
-    ? `<table><thead><tr><th>Date</th><th>Propriétaire</th><th>Type</th><th>Ville</th><th>Prix</th><th>Statut</th><th>Motiv.</th><th>Relance</th><th>Agent</th><th></th></tr></thead><tbody>`
+    ? `<table><thead><tr>
+        <th style="cursor:pointer" onclick="sortBy('date')">Date${arrow('date')}</th>
+        <th style="cursor:pointer" onclick="sortBy('nom')">Propriétaire${arrow('nom')}</th>
+        <th>Type</th>
+        <th style="cursor:pointer" onclick="sortBy('ville')">Ville${arrow('ville')}</th>
+        <th style="cursor:pointer" onclick="sortBy('prix')">Prix${arrow('prix')}</th>
+        <th style="cursor:pointer" onclick="sortBy('statut')">Statut${arrow('statut')}</th>
+        <th style="cursor:pointer" onclick="sortBy('motiv')">Motiv.${arrow('motiv')}</th>
+        <th style="cursor:pointer" onclick="sortBy('date_relance')">Relance${arrow('date_relance')}</th>
+        <th>Agent</th><th></th>
+      </tr></thead><tbody>`
       +data.map(p=>`<tr>
         <td>${p.date||'—'}</td>
         <td><div class="td-name">${p.prenom||''} ${p.nom||''}</div><div class="td-sub">${p.tel||'—'}</div></td>
@@ -639,16 +697,69 @@ function renderProspects(list) {
         <td style="font-size:12px;color:var(--g500)">${p.agent||'—'}</td>
         <td><button class="btn btn-sm btn-danger" onclick="deleteProspect(${p.id})"><i class="ti ti-trash"></i></button></td>
       </tr>`).join('')+'</tbody></table>'
-    : '<div class="empty-state"><i class="ti ti-building-store"></i><p>Aucun prospect</p></div>';
+    : '<div class="empty-state"><i class="ti ti-building-store"></i><p>Aucun résultat pour ces filtres</p></div>';
+}
+
+window.currentSortDir = 'desc';
+
+function toggleSortDir() {
+  window.currentSortDir = window.currentSortDir === 'asc' ? 'desc' : 'asc';
+  document.getElementById('sort-dir-icon').className = window.currentSortDir==='asc' ? 'ti ti-sort-ascending' : 'ti ti-sort-descending';
+  document.getElementById('sort-dir-label').textContent = window.currentSortDir==='asc' ? 'Croissant' : 'Décroissant';
+  filterProspects();
+}
+
+function sortBy(field) {
+  const sel = document.getElementById('s-sort-field');
+  if (sel.value === field) {
+    toggleSortDir();
+  } else {
+    sel.value = field;
+    filterProspects();
+  }
+}
+
+function resetFilters() {
+  document.getElementById('s-query').value = '';
+  document.getElementById('s-statut').value = '';
+  document.getElementById('s-type').value = '';
+  document.getElementById('s-motiv').value = '';
+  document.getElementById('s-relance').value = '';
+  document.getElementById('s-sort-field').value = 'date';
+  window.currentSortDir = 'desc';
+  document.getElementById('sort-dir-icon').className = 'ti ti-sort-descending';
+  document.getElementById('sort-dir-label').textContent = 'Décroissant';
+  filterProspects();
 }
 
 function filterProspects() {
   const q = document.getElementById('s-query').value.toLowerCase();
   const s = document.getElementById('s-statut').value;
   const t = document.getElementById('s-type').value;
-  renderProspects(prospects.filter(p =>
+  const m = document.getElementById('s-motiv').value;
+  const r = document.getElementById('s-relance').value;
+  const sortField = document.getElementById('s-sort-field').value;
+  const sortDir = window.currentSortDir || 'desc';
+
+  let filtered = prospects.filter(p =>
     (!q || (p.prenom+' '+p.nom+' '+p.ville+' '+p.tel+' '+p.adresse).toLowerCase().includes(q)) &&
-    (!s || p.statut===s) && (!t || p.type===t)));
+    (!s || p.statut===s) && (!t || p.type===t) &&
+    (!m || p.motiv===m) && (!r || p.relance===r));
+
+  const motivOrder = {'Faible':1,'Moyen':2,'Élevé':3};
+
+  filtered.sort((a,b) => {
+    let va, vb;
+    if (sortField === 'prix') { va = Number(a.prix)||0; vb = Number(b.prix)||0; }
+    else if (sortField === 'motiv') { va = motivOrder[a.motiv]||0; vb = motivOrder[b.motiv]||0; }
+    else if (sortField === 'nom') { va = (a.nom||'').toLowerCase(); vb = (b.nom||'').toLowerCase(); }
+    else { va = a[sortField]||''; vb = b[sortField]||''; }
+    if (va < vb) return sortDir==='asc' ? -1 : 1;
+    if (va > vb) return sortDir==='asc' ? 1 : -1;
+    return 0;
+  });
+
+  renderProspects(filtered);
 }
 
 function renderRelances() {
@@ -705,7 +816,6 @@ async function saveProspect() {
     resetForm();
     toast('Prospect enregistré avec succès !');
     showPage('prospects', document.querySelectorAll('.nav-item')[1]);
-    renderProspects();
   } catch(e) {
     toast('Erreur lors de l\'enregistrement.', false);
   } finally {
@@ -721,7 +831,7 @@ async function deleteProspect(id) {
     await apiFetch('?id=eq.'+id, {method:'DELETE'});
     await loadProspects();
     updateBadge();
-    renderProspects();
+    filterProspects();
     renderDashboard();
     toast('Prospect supprimé.');
   } catch(e) {
@@ -739,6 +849,8 @@ function resetForm() {
   .forEach(id => { const e=document.getElementById(id); if(e) e.selectedIndex=0; });
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 }
+
+
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 (async () => {
