@@ -934,26 +934,89 @@ function exportToExcel() {
   const appelStatuts = ['Appelé','Refus','Intéressé','Rendez-vous obtenu','Mandat signé'];
   const appels = prospects.filter(p => appelStatuts.includes(p.statut)).length;
   const rdvCount = prospects.filter(p => p.statut==='Rendez-vous obtenu'||p.statut==='Mandat signé').length;
+  const nonAppeles = prospects.filter(p => p.statut==='Non appelé').length;
   const mandats = prospects.filter(p => p.statut==='Mandat signé').length;
   const relancesCount = prospects.filter(p => p.relance==='Oui').length;
-  const taux = appels>0 ? (rdvCount/appels*100).toFixed(1)+'%' : '0.0%';
+  const interessesCount = prospects.filter(p => p.statut==='Intéressé').length;
+  const taux = appels>0 ? (rdvCount/appels*100).toFixed(1).replace('.',',')+'%' : '0,0%';
 
-  const dbData = [
-    ['📊  TABLEAU DE BORD — PROSPECTION IMMOBILIÈRE'],
-    [],
-    ['Indicateur','Valeur'],
-    ['Total annonces récupérées', total],
-    ['Appels effectués', appels],
-    ['Rendez-vous obtenus', rdvCount],
-    ['Taux de transformation appel → RDV', taux],
-    ['Relances à effectuer', relancesCount],
-    ['Mandats signés', mandats]
+  // Grille 13 colonnes (A→M) reproduisant la mise en page de l'original
+  const dbWs = {};
+  const setCell = (ref, value, style) => { dbWs[ref] = {v:value, t: typeof value==='number'?'n':'s'}; if (style) dbWs[ref].s = style; };
+  const mergeList = [];
+
+  // ── Titre ──
+  mergeList.push({s:{r:1,c:1},e:{r:1,c:11}});
+  setCell('B2', '📊  TABLEAU DE BORD — PROSPECTION IMMOBILIÈRE', {
+    font:{bold:true,sz:15,color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:'1F3864'}},
+    alignment:{horizontal:'center',vertical:'center'}
+  });
+
+  // ── Helper pour une carte KPI (label + valeur, sur 2 colonnes fusionnées) ──
+  function kpiCard(rLabel, rValue, colStart, colEnd, label, value, bg, fontColor) {
+    fontColor = fontColor || 'FFFFFF';
+    mergeList.push({s:{r:rLabel,c:colStart}, e:{r:rLabel,c:colEnd}});
+    mergeList.push({s:{r:rValue,c:colStart}, e:{r:rValue,c:colEnd}});
+    const labelRef = XLSX.utils.encode_cell({r:rLabel,c:colStart});
+    const valueRef = XLSX.utils.encode_cell({r:rValue,c:colStart});
+    setCell(labelRef, label, {font:{bold:true,sz:10,color:{rgb:fontColor}},fill:{fgColor:{rgb:bg}},alignment:{horizontal:'center',vertical:'center'}});
+    setCell(valueRef, value, {font:{bold:true,sz:22,color:{rgb:fontColor}},fill:{fgColor:{rgb:bg}},alignment:{horizontal:'center',vertical:'center'}});
+  }
+
+  // ── Section headers ──
+  function sectionLabel(r, colStart, colEnd, text) {
+    mergeList.push({s:{r,c:colStart}, e:{r,c:colEnd}});
+    const ref = XLSX.utils.encode_cell({r,c:colStart});
+    setCell(ref, text, {font:{bold:true,sz:11,color:{rgb:'1F3864'}},fill:{fgColor:{rgb:'D6E4F7'}},alignment:{horizontal:'left',vertical:'center',indent:1}});
+  }
+
+  // Colonnes : B=1,C=2 (annonces) / F=5,G=6 (resultats) -- en index 0-based
+  sectionLabel(4, 1, 2, '📋  ANNONCES & APPELS');
+  kpiCard(5, 6, 1, 2, 'Total annonces récupérées', total, '4472C4');
+  kpiCard(8, 9, 1, 2, 'Appels effectués', appels, '2F5496');
+  kpiCard(11, 12, 1, 2, 'Non appelés', nonAppeles, '7F7F7F');
+
+  sectionLabel(4, 5, 6, '🎯  RÉSULTATS');
+  kpiCard(5, 6, 5, 6, 'Rendez-vous obtenus', rdvCount, '217346');
+  kpiCard(8, 9, 5, 6, 'Taux appel → RDV', taux, '4B6F1E');
+  kpiCard(11, 12, 5, 6, 'Mandats signés', mandats, '1F3864', 'FFD700');
+
+  sectionLabel(15, 1, 2, '🔔  RELANCES');
+  kpiCard(16, 17, 1, 2, 'Relances à effectuer', relancesCount, 'C55A11');
+
+  sectionLabel(15, 5, 6, '🤝  PIPELINE');
+  kpiCard(16, 17, 5, 6, 'Prospects intéressés', interessesCount, '843C0C');
+
+  // ── Légende ──
+  sectionLabel(20, 1, 6, '🎨  LÉGENDE DES COULEURS');
+  const legend = [
+    [21, '✅  Rendez-vous obtenu', 'C6EFCE', '276221'],
+    [23, '📝  Mandat signé', 'BDD7EE', '1F497D'],
+    [25, '❌  Refus', 'FFC7CE', '9C0006'],
+    [27, '🔔  Relance nécessaire', 'FFEB9C', '9C5700']
   ];
-  const dbWs = XLSX.utils.aoa_to_sheet(dbData);
-  dbWs['!merges'] = [{s:{r:0,c:0},e:{r:0,c:1}}];
-  dbWs['!cols'] = [{wch:34},{wch:16}];
-  if (dbWs['A1']) dbWs['A1'].s = {font:{bold:true,sz:14,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'1F3864'}},alignment:{horizontal:'center'}};
-  ['A3','B3'].forEach(ref => { if(dbWs[ref]) dbWs[ref].s = {font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'2F5496'}}}; });
+  legend.forEach(([r, text, bg, fg]) => {
+    mergeList.push({s:{r,c:1}, e:{r,c:2}});
+    setCell(XLSX.utils.encode_cell({r,c:1}), text, {font:{bold:true,sz:10,color:{rgb:fg}},fill:{fgColor:{rgb:bg}},alignment:{horizontal:'center',vertical:'center'}});
+  });
+
+  // ── Finalize sheet ──
+  dbWs['!ref'] = 'A1:N29';
+  dbWs['!merges'] = mergeList;
+  dbWs['!cols'] = [{wch:3},{wch:20},{wch:20},{wch:3},{wch:3},{wch:20},{wch:20},{wch:3},{wch:3},{wch:3},{wch:3},{wch:3},{wch:3},{wch:3}];
+  dbWs['!rows'] = [];
+  dbWs['!rows'][1] = {hpt:30};
+  [4,15,20].forEach(r => dbWs['!rows'][r] = {hpt:24});
+  [5,8,11,16].forEach(r => { dbWs['!rows'][r] = {hpt:22}; dbWs['!rows'][r+1] = {hpt:42}; });
+
+  // Fond gris clair général (style capture d'écran)
+  for (let r=0; r<29; r++) {
+    for (let c=0; c<14; c++) {
+      const ref = XLSX.utils.encode_cell({r,c});
+      if (!dbWs[ref]) setCell(ref, '', {fill:{fgColor:{rgb:'EEF2FA'}}});
+    }
+  }
+
   XLSX.utils.book_append_sheet(wb, dbWs, 'Tableau de bord');
 
   const today = new Date().toISOString().split('T')[0];
