@@ -287,10 +287,9 @@ tr:hover td{background:var(--blue-lt);}
       <div class="brand-sub">Suivi de prospection</div>
     </div>
     <div class="nav-section">Menu</div>
-    <div class="nav-item active" onclick="showPage('aujourdhui',this)"><i class="ti ti-sun"></i> Aujourd'hui</div>
-    <div class="nav-item" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Tableau de bord</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Tableau de bord</div>
     <div class="nav-item" onclick="showPage('prospects',this)"><i class="ti ti-building-store"></i> Mes prospects</div>
-    <div class="nav-item" onclick="showPage('nouveau',this)"><i class="ti ti-circle-plus"></i> Nouvelle annonce</div>
+    <div class="nav-item" onclick="openNewProspectForm(this)"><i class="ti ti-circle-plus"></i> Nouvelle annonce</div>
     <div class="nav-item" onclick="showPage('relances',this)"><i class="ti ti-bell-ringing"></i> Relances <span class="nav-badge" id="nav-badge" style="display:none">0</span></div>
     <div class="nav-section">Outils</div>
     <div class="nav-item" onclick="showPage('script',this)"><i class="ti ti-messages"></i> Script d'appel</div>
@@ -309,7 +308,7 @@ tr:hover td{background:var(--blue-lt);}
         <span class="topbar-date" id="topbar-date"></span>
       </div>
       <div class="topbar-actions">
-        <button class="btn btn-primary" onclick="showPage('nouveau',document.querySelectorAll('.nav-item')[2])">
+        <button class="btn btn-primary" onclick="openNewProspectForm(document.querySelectorAll('.nav-item')[2])">
           <i class="ti ti-plus"></i><span> Nouvelle annonce</span>
         </button>
       </div>
@@ -317,63 +316,8 @@ tr:hover td{background:var(--blue-lt);}
 
     <div class="content">
 
-      <!-- AUJOURD'HUI -->
-      <div class="page active" id="page-aujourdhui">
-        <div class="card" style="background:linear-gradient(135deg,#1F3864,#2563EB); border:none; box-shadow:0 4px 12px rgba(37,99,235,0.25);">
-          <div style="padding:18px 20px; color:#fff;">
-            <div style="font-size:13px; opacity:0.85; margin-bottom:2px;" id="today-greeting">Bonjour</div>
-            <div style="font-size:18px; font-weight:700;" id="today-date-full">—</div>
-          </div>
-        </div>
-
-        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
-          <div class="kpi-card c-blue">
-            <div class="kpi-icon"><i class="ti ti-phone-outgoing"></i></div>
-            <div class="kpi-label">Appels du jour</div>
-            <div class="kpi-value" id="today-calls-count">0</div>
-            <div class="kpi-sub">effectués aujourd'hui</div>
-          </div>
-          <div class="kpi-card c-orange">
-            <div class="kpi-icon"><i class="ti ti-bell-ringing"></i></div>
-            <div class="kpi-label">Relances dues</div>
-            <div class="kpi-value" id="today-relances-count">0</div>
-            <div class="kpi-sub">à traiter aujourd'hui</div>
-          </div>
-          <div class="kpi-card c-green">
-            <div class="kpi-icon"><i class="ti ti-list-check"></i></div>
-            <div class="kpi-label">À appeler</div>
-            <div class="kpi-value" id="today-todo-count">0</div>
-            <div class="kpi-sub">prospects en attente</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title"><i class="ti ti-flame"></i> En retard</span>
-            <span id="today-late-count" style="font-size:12px; color:var(--red); font-weight:600;"></span>
-          </div>
-          <div id="today-late-list"><div class="empty-state"><i class="ti ti-check"></i><p>Aucun retard, tout est à jour !</p></div></div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title"><i class="ti ti-bell-ringing"></i> Relances prévues aujourd'hui</span>
-            <span id="today-rel-count2" style="font-size:12px; color:var(--g500);"></span>
-          </div>
-          <div id="today-relances-list"><div class="empty-state"><i class="ti ti-bell-off"></i><p>Aucune relance aujourd'hui</p></div></div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title"><i class="ti ti-phone"></i> À appeler en priorité</span>
-            <span id="today-todo-count2" style="font-size:12px; color:var(--g500);"></span>
-          </div>
-          <div id="today-todo-list"><div class="empty-state"><i class="ti ti-circle-check"></i><p>Tous vos prospects ont été contactés</p></div></div>
-        </div>
-      </div>
-
       <!-- DASHBOARD -->
-      <div class="page" id="page-dashboard">
+      <div class="page active" id="page-dashboard">
         <div class="kpi-grid">
           <div class="kpi-card c-blue"><div class="kpi-icon"><i class="ti ti-files"></i></div><div class="kpi-label">Total annonces</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub">récupérées</div></div>
           <div class="kpi-card c-orange"><div class="kpi-icon"><i class="ti ti-phone"></i></div><div class="kpi-label">Appels effectués</div><div class="kpi-value" id="k-appels">—</div><div class="kpi-sub">contacts réalisés</div></div>
@@ -473,7 +417,10 @@ tr:hover td{background:var(--blue-lt);}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title"><i class="ti ti-phone"></i> Suivi de contact</span></div>
+          <div class="card-header">
+            <span class="card-title"><i class="ti ti-phone"></i> Suivi de contact</span>
+            <span class="badge b-blue" id="edit-mode-badge" style="display:none;"><i class="ti ti-edit"></i> Modification en cours</span>
+          </div>
           <div class="form-section">
             <div class="form-grid">
               <div class="field"><label>Statut</label><select id="f-statut"><option>Non appelé</option><option>Appel en attente</option><option>Appelé</option><option>Refus</option><option>Intéressé</option><option>Rendez-vous obtenu</option><option>Mandat signé</option></select></div>
@@ -491,8 +438,9 @@ tr:hover td{background:var(--blue-lt);}
             </div>
           </div>
           <div class="form-actions">
+            <button class="btn" id="cancel-edit-btn" onclick="cancelEdit()" style="display:none;"><i class="ti ti-x"></i> Annuler la modification</button>
             <button class="btn" onclick="resetForm()"><i class="ti ti-refresh"></i> Réinitialiser</button>
-            <button class="btn btn-primary" onclick="saveProspect()"><i class="ti ti-device-floppy"></i> Enregistrer</button>
+            <button class="btn btn-primary" id="save-btn" onclick="saveProspect()"><i class="ti ti-device-floppy"></i> Enregistrer</button>
           </div>
         </div>
       </div>
@@ -582,9 +530,9 @@ tr:hover td{background:var(--blue-lt);}
 <!-- BOTTOM NAV mobile -->
 <div class="bottom-nav">
   <div class="bottom-nav-inner">
-    <div class="bnav-item active" onclick="showPage('aujourdhui',this)" id="bn-aujourdhui"><i class="ti ti-sun"></i><span>Aujourd'hui</span></div>
+    <div class="bnav-item active" onclick="showPage('dashboard',this)" id="bn-dashboard"><i class="ti ti-layout-dashboard"></i><span>Accueil</span></div>
     <div class="bnav-item" onclick="showPage('prospects',this)" id="bn-prospects"><i class="ti ti-building-store"></i><span>Prospects</span></div>
-    <div class="bnav-item" onclick="showPage('nouveau',this)" id="bn-nouveau"><i class="ti ti-circle-plus"></i><span>Ajouter</span></div>
+    <div class="bnav-item" onclick="openNewProspectForm(this)" id="bn-nouveau"><i class="ti ti-circle-plus"></i><span>Ajouter</span></div>
     <div class="bnav-item" onclick="showPage('relances',this)" id="bn-relances"><i class="ti ti-bell-ringing"></i><span>Relances</span><span class="bnav-badge" id="bnav-badge" style="display:none">0</span></div>
     <div class="bnav-item" onclick="showPage('script',this)" id="bn-script"><i class="ti ti-messages"></i><span>Script</span></div>
   </div>
@@ -606,7 +554,7 @@ let connected = false;
 const SC = {'Non appelé':'b-gray','Appel en attente':'b-orange','Appelé':'b-blue','Refus':'b-red','Intéressé':'b-purple','Rendez-vous obtenu':'b-green','Mandat signé':'b-navy'};
 const MC = {'Faible':'b-red','Moyen':'b-orange','Élevé':'b-green'};
 const APPEL = ['Appelé','Refus','Intéressé','Rendez-vous obtenu','Mandat signé'];
-const PT = {aujourdhui:"Aujourd'hui",dashboard:'Tableau de bord',prospects:'Mes prospects',nouveau:'Nouvelle annonce',relances:'Relances',script:"Script d'appel"};
+const PT = {dashboard:'Tableau de bord',prospects:'Mes prospects',nouveau:'Nouvelle annonce',relances:'Relances',script:"Script d'appel"};
 
 // Affiche une date stockée en ISO (YYYY-MM-DD) au format français JJ-MM-AAAA.
 // Le stockage reste en ISO pour que le tri chronologique (string compare) fonctionne toujours.
@@ -672,7 +620,6 @@ function showPage(id, el) {
   if (bn) bn.classList.add('active');
   document.getElementById('page-title').textContent = PT[id] || '';
   closeSidebar();
-  if (id==='aujourdhui') renderAujourdhui();
   if (id==='dashboard') renderDashboard();
   if (id==='prospects') filterProspects();
   if (id==='relances')  renderRelances();
@@ -962,7 +909,10 @@ function renderProspects(list) {
         <td><span class="badge ${MC[p.motiv]||'b-gray'}">${p.motiv||'—'}</span></td>
         <td>${p.relance==='Oui'?`<span class="badge b-orange"><i class="ti ti-bell" style="font-size:10px"></i> ${dispDate(p.date_relance)||'Oui'}</span>`:'<span style="color:var(--g400);font-size:12px">Non</span>'}</td>
         <td style="font-size:12px;color:var(--g500)">${p.agent||'—'}</td>
-        <td><button class="btn btn-sm btn-danger" onclick="deleteProspect(${p.id})"><i class="ti ti-trash"></i></button></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm" onclick="editProspect(${p.id})" title="Modifier"><i class="ti ti-edit"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="deleteProspect(${p.id})" title="Supprimer"><i class="ti ti-trash"></i></button>
+        </td>
       </tr>`).join('')+'</tbody></table>'
     : '<div class="empty-state"><i class="ti ti-building-store"></i><p>Aucun résultat pour ces filtres</p></div>';
 }
@@ -1044,7 +994,62 @@ function renderRelances() {
     : '<div class="empty-state"><i class="ti ti-bell-off"></i><p>Aucune relance planifiée</p></div>';
 }
 
-// ── SAVE / DELETE ─────────────────────────────────────────────────────────────
+// ── SAVE / EDIT / DELETE ─────────────────────────────────────────────────────
+let editingId = null;
+
+function editProspect(id) {
+  const p = prospects.find(x => String(x.id)===String(id));
+  if (!p) { toast('Prospect introuvable.', false); return; }
+  editingId = p.id;
+
+  document.getElementById('f-date').value         = p.date || '';
+  document.getElementById('f-lien').value          = p.lien || '';
+  document.getElementById('f-type').value          = p.type || 'Maison';
+  document.getElementById('f-ville').value         = p.ville || '';
+  document.getElementById('f-adresse').value       = p.adresse || '';
+  document.getElementById('f-prenom').value        = p.prenom || '';
+  document.getElementById('f-nom').value            = p.nom || '';
+  document.getElementById('f-tel').value           = p.tel || '';
+  document.getElementById('f-prix').value          = p.prix || '';
+  document.getElementById('f-surface').value       = p.surface || '';
+  document.getElementById('f-statut').value        = p.statut || 'Non appelé';
+  document.getElementById('f-date-appel').value    = p.date_appel || '';
+  document.getElementById('f-resume').value        = p.resume || '';
+  document.getElementById('f-rdv').value           = p.rdv || 'Non';
+  document.getElementById('f-date-rdv').value      = p.date_rdv || '';
+  document.getElementById('f-heure-rdv').value     = p.heure_rdv || '';
+  document.getElementById('f-agent').value         = p.agent || '';
+  document.getElementById('f-motiv').value         = p.motiv || 'Faible';
+  document.getElementById('f-relance').value       = p.relance || 'Non';
+  document.getElementById('f-date-relance').value  = p.date_relance || '';
+  document.getElementById('f-priorite').value      = p.priorite || 'Normale';
+  document.getElementById('f-commentaires').value  = p.commentaires || '';
+
+  document.getElementById('edit-mode-badge').style.display = 'inline-flex';
+  document.getElementById('cancel-edit-btn').style.display = 'inline-flex';
+  document.getElementById('save-btn').innerHTML = '<i class="ti ti-device-floppy"></i> Mettre à jour';
+
+  showPage('nouveau', document.querySelectorAll('.nav-item')[2]);
+}
+
+function cancelEdit() {
+  editingId = null;
+  resetForm();
+  document.getElementById('edit-mode-badge').style.display = 'none';
+  document.getElementById('cancel-edit-btn').style.display = 'none';
+  document.getElementById('save-btn').innerHTML = '<i class="ti ti-device-floppy"></i> Enregistrer';
+  showPage('prospects', document.querySelectorAll('.nav-item')[1]);
+}
+
+function openNewProspectForm(el) {
+  editingId = null;
+  resetForm();
+  document.getElementById('edit-mode-badge').style.display = 'none';
+  document.getElementById('cancel-edit-btn').style.display = 'none';
+  document.getElementById('save-btn').innerHTML = '<i class="ti ti-device-floppy"></i> Enregistrer';
+  showPage('nouveau', el);
+}
+
 async function saveProspect() {
   const ville = document.getElementById('f-ville').value.trim();
   const nom   = document.getElementById('f-nom').value.trim();
@@ -1077,14 +1082,24 @@ async function saveProspect() {
 
   showLoader(true);
   try {
-    await apiFetch('', {method:'POST', headers:{...HEADERS,'Prefer':'return=minimal'}, body:JSON.stringify(data)});
+    if (editingId) {
+      await apiFetch('?id=eq.'+editingId, {method:'PATCH', headers:{...HEADERS,'Prefer':'return=minimal'}, body:JSON.stringify(data)});
+      toast('Prospect mis à jour avec succès !');
+    } else {
+      await apiFetch('', {method:'POST', headers:{...HEADERS,'Prefer':'return=minimal'}, body:JSON.stringify(data)});
+      toast('Prospect enregistré avec succès !');
+    }
     await loadProspects();
     updateBadge();
+    const wasEditing = !!editingId;
+    editingId = null;
     resetForm();
-    toast('Prospect enregistré avec succès !');
+    document.getElementById('edit-mode-badge').style.display = 'none';
+    document.getElementById('cancel-edit-btn').style.display = 'none';
+    document.getElementById('save-btn').innerHTML = '<i class="ti ti-device-floppy"></i> Enregistrer';
     showPage('prospects', document.querySelectorAll('.nav-item')[1]);
   } catch(e) {
-    toast('Erreur lors de l\'enregistrement.', false);
+    toast(editingId ? 'Erreur lors de la mise à jour.' : 'Erreur lors de l\'enregistrement.', false);
   } finally {
     showLoader(false);
   }
